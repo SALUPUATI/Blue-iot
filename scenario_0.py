@@ -7,6 +7,8 @@ import serial
 import random
 import threading
 import time
+import datetime
+now = datetime.datetime.now()
 def result():
   ser = serial.Serial('/dev/ttyUSB0', 38400, timeout=0)
   while True:
@@ -14,13 +16,10 @@ def result():
     result = int (time.strftime("%S", localtime))
     time.sleep(0.5)
     A = ser.readline()
-#    print (A)
+    #print (A)
     if len(A)>3:
-       print (result)
+#       print (result)
        print (A)
-       f = open("zoo.txt", "a+")
-       f.writelines(str(A))
-       f.write("\r\n")
 def pay ():
   ser = serial.Serial('/dev/ttyUSB0', 38400, timeout = 0)
   n = 0
@@ -29,7 +28,7 @@ def pay ():
     payload = format (n, '02x')
     command = ("*TRA,2,2,2,FF"+payload+",>")+'\r\n'
     ser.write(command.encode())
-    time.sleep(10)
+    time.sleep(12)
 
 t_1 = threading.Thread(name='result', target=result)
 t_2 = threading.Thread(name='pay', target=pay)
@@ -38,4 +37,5 @@ t_2.start()
 
 t_1.join()
 t_2.join()
+
 
