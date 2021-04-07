@@ -22,13 +22,13 @@ pwm.start(dc)                      # Start PWM with 0% duty cycle
 
 try:
   while True:                      # Loop until Ctl C is pressed to stop.
-    for dc in range(0, 56, 56):    # Loop 0 to 100 stepping dc by 5 each loop
+    for dc in range(0, 56, 56):    # Loop 0 to 56 stepping dc by 56 each loop
       pwm.ChangeDutyCycle(dc)
-      time.sleep(0.99)             # wait .05 seconds at current LED brightness
+      time.sleep(0.99)             # wait .99 seconds at current LED brightness
       print(dc)
-    for dc in range(56, 0, -56):    # Loop 95 to 5 stepping dc down by 5 each l$
+    for dc in range(56, 0, -56):    # Loop 56 to 0 stepping dc down by 56 each l$
       pwm.ChangeDutyCycle(dc)
-      time.sleep(0.001)             # wait .05 seconds at current LED brightness
+      time.sleep(0.001)             # wait .001 seconds at current LED brightness
       print(dc)
 except KeyboardInterrupt:
   print("Ctl C pressed - ending program")
