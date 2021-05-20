@@ -1,26 +1,37 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Mars 23 09:32:22 2021
+Created on Wed Mars 1 04:32:22 2021
 @author: Fekher khelifi
 http://www.electronicwings.com
 """
 
-import RPi.GPIO as GPIO
-from time import sleep
+import RPi.GPIO as GPIO   # Import the GPIO library.
+import time               # Import time library
 
-ledpin = 12				# PWM pin connected to LED
-GPIO.setwarnings(False)			#disable warnings
-GPIO.setmode(GPIO.BOARD)		#set pin numbering system
-GPIO.setup(ledpin,GPIO.OUT)
-pi_pwm = GPIO.PWM(ledpin,1000)		#create PWM instance with frequency
-pi_pwm.start(0)				#start PWM of required Duty Cycle 
-while True:
-    for duty in range(0,57,57):
-        pi_pwm.ChangeDutyCycle(duty) #provide duty cycle in the range 0-100
-        sleep(5)
-    sleep(0.5)
-    
-    for duty in range(57,-1,-57):
-        pi_pwm.ChangeDutyCycle(duty)
-        sleep(5)
-    sleep(0.5)
+GPIO.setmode(GPIO.BOARD)  # Set Pi to use pin number when referencing GPIO pins.
+                          # Can use GPIO.setmode(GPIO.BCM) instead to use
+                          # Broadcom SOC channel names.
+
+GPIO.setup(12, GPIO.OUT)  # Set GPIO pin 12 to output mode.
+pwm = GPIO.PWM(12, 56)   # Initialize PWM on pwmPin 100Hz frequency
+
+# main loop of program
+print("\nPress Ctl C to quit \n")  # Print blank line before and after message.
+dc=0                               # set dc variable to 0 for 0%
+pwm.start(dc)                      # Start PWM with 0% duty cycle
+
+try:
+  while True:                      # Loop until Ctl C is pressed to stop.
+    for dc in range(0, 56, 56):    # Loop 0 to 56 stepping dc by 56 each loop
+      pwm.ChangeDutyCycle(dc)
+      time.sleep(0.99)             # wait .99 seconds at current LED brightness
+      print(dc)
+    for dc in range(56, 0, -56):    # Loop 56 to 0 stepping dc down by 56 each l$
+      pwm.ChangeDutyCycle(dc)
+      time.sleep(0.001)             # wait .001 seconds at current LED brightness
+      print(dc)
+except KeyboardInterrupt:
+  print("Ctl C pressed - ending program")
+
+pwm.stop()                         # stop PWM
+GPIO.cleanup()    
