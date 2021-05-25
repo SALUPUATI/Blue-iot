@@ -34,16 +34,16 @@ def mat(n_nodes=20):
     M = np.array([[np.nan]*N]*N) # initialiser la matrice avec nan de taille 32*32
     #print(M.shape) # verification
 
-    Na = N-1 # nombre d'adresse
+    Na = N # nombre d'adresse
 
     for destination in range(Na):
         for source in range(Na):
-            if source == destination or source ==0:
+            if source == destination or source ==0 or destination==0:
                 continue
             if source > destination:
-                M[destination+1][source+1] = destination*(Na-2) + (source-1)
+                M[destination][source] = destination*(Na-2) + (source-1)
             else:
-                M[destination+1][source+1] = destination*(Na-2) + source
+                M[destination][source] = destination*(Na-2) + source
     
     return M
 
@@ -59,22 +59,15 @@ def get_probs(mat):
         P_symbols : one dimensional array containing each symbol's probability
 
     """
-    # start getting symbols
-    tmp = mat.flatten()
-    tmp [np.isnan(tmp) ] = -1
-    tmp = tmp.astype(int)
-    tmp = list(set(tmp.tolist()))
-    tmp.remove(-1)
-    symbols = np.array(tmp)
     # end getting symbols
 
     # start variable initialization
     P = np.zeros(mat.shape)
-    P_symbols = np.zeros(len(symbols))
     N = len(mat)
-    Na = N - 1
+    P_symbols = np.zeros(2**N)
+    Na = N
     Na2 = Na**2
-    a_gate = 2
+    a_gate = 1
     p0 = (Na-2)**-1
     p1 = (Na-3)**-1
     p2 = (Na2 - 6*Na + 9)**-1
@@ -88,7 +81,7 @@ def get_probs(mat):
                 P[destination,source] = np.nan
                 continue
             if source==a_gate:
-                p = (1-gamma_a)*p0
+                p = (gamma_a)*p0
             elif destination == a_gate:
                 p = (gamma_a-gamma_c)*p1
             elif source!=a_gate and destination!=a_gate:
@@ -100,6 +93,34 @@ def get_probs(mat):
 
 #https://stackoverflow.com/questions/11587044/how-can-i-create-a-tree-for-huffman-encoding-and-decoding
 
+def get_symbols(P):
+    """
+        Get symbols from P
+    """
+    # start getting symbols
+    P[np.isnan(P)] = -1
+    symbols = list(set(list(P.flatten())))
+    symbols.remove(-1)
+    return symbols
+
+def get_occurence(M):
+    """
+        Get occurences from P
+    """
+    sym = get_symbols(M)
+    T = []
+    M = M.flatten()
+    for i in sym:
+        T.append(np.count_nonzero(M == i))
+    return T
+
+def get_entropy(M):
+    occurences = np.array(get_occurence(M))
+    probs = occurences / np.sum(occurences)
+    
+    entropy = sum([(np.log2(1/pi)*pi) for pi in probs])
+
+    return entropy
 def assign_code(nodes, label, result, prefix = ''):
     """
         assigning code to each nodes of the tree
@@ -199,7 +220,7 @@ def make_freq(P):
         for source in range(len(P)):
             if np.isnan(P[destination,source]):
                 continue
-            P_tups.append([P[destination,source], "{}-{}".format(destination-1,source-1)])
+            P_tups.append([P[destination,source], "{}-{}".format(destination,source)])
     return P_tups
 
 def get_bits(raw):
@@ -207,6 +228,21 @@ def get_bits(raw):
         Helper function to undo the tree formatting to get only bits (for countring puposes)
     """
     return raw.split(',')[0].split('=')[1].replace('"','').split(':')[1]
+
+def sum_up_one(P):
+    """
+        Transform an array of probs to sum up to 1
+    """
+    P [np.isnan(P)] = 0.0
+    Pt = []
+    for id,i in enumerate(P):
+        if sum(i)>0:
+            Pt.append(i/sum(i))
+        else:
+            Pt.append(i)
+    Pt = np.array(Pt).T
+    Pt[Pt==0] = np.nan
+    return Pt
 
 
 def main(n_nodes=6,outpath="graph.png",verbose=False):
@@ -218,6 +254,10 @@ def main(n_nodes=6,outpath="graph.png",verbose=False):
 
     M = mat(n_nodes)
     P = get_probs(M)[0]
+    
+    P_old = P.copy()
+
+    P = sum_up_one(P)
     freq = make_freq(P)
     #print(freq)
     vals = {l:v for (v,l) in freq}
@@ -234,8 +274,12 @@ def main(n_nodes=6,outpath="graph.png",verbose=False):
         print(M)
         print("\n\n")
 
-        print("*"*20,"\n Probabilities : \n ", "*"*20)
-        print(P)
+        print("*"*20,"\n Probabilities  : \n ", "*"*20)
+        print(np.round_(P_old, decimals = 4))
+        print("\n\n")
+
+        print("*"*20,"\n Probabilities col sum to 1 : \n ", "*"*20)
+        print(np.round_(P, decimals = 4))
         print("\n\n")
 
         print("*"*20,"\n Tree : \n ", "*"*20)
@@ -250,12 +294,15 @@ def main(n_nodes=6,outpath="graph.png",verbose=False):
     if outpath:
         export_graph(tree,filename=outpath)
     print("Leaf number : {}".format(len(t)))
-    print("Number of bits: {}".format((n_bits)))
+    print("Number of bits: {}".format(n_bits))
+    print("Entropy : {}".format(get_entropy(P_old)))
+    print("Huffman Code length : {} ".format(n_bits/(((2**(n_nodes.bit_length()))-1)**2)))
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    
     main(args.n_nodes,outpath=args.outpath,verbose=args.verbose)
+
+
 
 
 
